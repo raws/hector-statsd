@@ -40,17 +40,7 @@ module Hector
     end
     
     def method_missing(method_name, *args)
-      if intercepts.key?(method_name)
-        intercepts_for(method_name).each do |stat_name, pattern|
-          if pattern
-            intercept(pattern) do
-              increment(stat_name)
-            end
-          else
-            increment(stat_name)
-          end
-        end
-      end
+      run_intercepts_for(method_name) if intercepts.key?(method_name)
     end
     
     def respond_to_missing?(method_name, include_private)
@@ -64,6 +54,18 @@ module Hector
       
       def intercepts_for(event_name)
         intercepts[event_name] ||= []
+      end
+      
+      def run_intercepts_for(event_name)
+        intercepts_for(event_name).each do |stat_name, pattern|
+          if pattern
+            intercept(pattern) do
+              increment(stat_name)
+            end
+          else
+            increment(stat_name)
+          end
+        end
       end
   end
 end
