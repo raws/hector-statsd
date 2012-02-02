@@ -28,4 +28,22 @@ module Hector
     alias_method :send_data_without_statsd, :send_data
     alias_method :send_data, :send_data_with_statsd
   end
+  
+  class SSLConnection
+    def post_init_with_statsd_ssl(*args)
+      Hector.statsd.increment("connections") if Hector.statsd
+      Hector.statsd.increment("ssl_connections") if Hector.statsd
+      post_init_without_statsd_ssl(*args)
+    end
+    alias_method :post_init_without_statsd_ssl, :post_init
+    alias_method :post_init, :post_init_with_statsd_ssl
+    
+    def unbind_with_statsd_ssl(*args)
+      # Hector::Connection's unbind will be called by itself
+      Hector.statsd.decrement("ssl_connections") if Hector.statsd
+      unbind_without_statsd_ssl(*args)
+    end
+    alias_method :unbind_without_statsd_ssl, :unbind
+    alias_method :unbind, :unbind_with_statsd_ssl
+  end
 end
