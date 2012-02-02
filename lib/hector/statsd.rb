@@ -34,9 +34,19 @@ module Hector
     
     def increment(name)
       Hector.defer do
-        name = "#{namespace.chomp(".")}.#{name}" if namespace
-        client.increment(name) if client.respond_to?(:increment)
+        client.increment(normalize_stat_name(name)) if client.respond_to?(:increment)
       end
+    end
+    
+    def decrement(name)
+      Hector.defer do
+        client.decrement(normalize_stat_name(name)) if client.respond_to?(:decrement)
+      end
+    end
+    
+    def normalize_stat_name(name)
+      name = "#{namespace.chomp(".")}.#{name}" if namespace
+      name
     end
     
     def method_missing(method_name, *args)
