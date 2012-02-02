@@ -28,12 +28,39 @@ module Hector
   class StatsdService < Service
     attr_accessor :client, :namespace
     
+    def track(event_name, pattern, stat_name)
+      intercepts_for(event_name.to_sym) << [stat_name, pattern]
+    end
+    
     def increment(name)
       Hector.defer do
         name = "#{namespace.chomp(".")}.#{name}" if namespace
         client.increment(name) if client.respond_to?(:increment)
       end
     end
+    
+    def method_missing(method_name, *args)
+      if intercepts.key?(method_name)
+        intercepts_for(method_name).each do |stat_name, pattern|
+          intercept(pattern) do
+            increment(stat_name)
+          end
+        end
+      end
+    end
+    
+    def respond_to_missing?(method_name, include_private)
+      intercepts.key?(method_name)
+    end
+    
+    protected
+      def intercepts
+        @intercepts ||= {}
+      end
+      
+      def intercepts_for(event_name)
+        intercepts[event_name] ||= []
+      end
   end
 end
 
