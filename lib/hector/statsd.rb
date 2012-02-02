@@ -28,7 +28,7 @@ module Hector
   class StatsdService < Service
     attr_accessor :client, :namespace
     
-    def track(event_name, pattern, stat_name)
+    def track(stat_name, event_name, pattern = nil)
       intercepts_for(event_name.to_sym) << [stat_name, pattern]
     end
     
@@ -42,7 +42,11 @@ module Hector
     def method_missing(method_name, *args)
       if intercepts.key?(method_name)
         intercepts_for(method_name).each do |stat_name, pattern|
-          intercept(pattern) do
+          if pattern
+            intercept(pattern) do
+              increment(stat_name)
+            end
+          else
             increment(stat_name)
           end
         end
